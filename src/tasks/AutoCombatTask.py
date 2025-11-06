@@ -19,20 +19,17 @@ class AutoCombatTask(BaseCombatTask, TriggerTask):
         })
         self.listener = None
         self.manual_in_combat = False
+        self._executor.exit_event.bind_stop(self)
 
     def disable(self):
         super().disable()
-        self.stop_listener()
+        self.stop()
 
     def pause(self):
         super().pause()
-        self.stop_listener()
+        self.stop()
 
-    def on_destroy(self):
-        super().on_destroy()
-        self.stop_listener()
-
-    def stop_listener(self):
+    def stop(self):
         self.manual_activate = False
         if self.listener:
             self.listener.stop()
