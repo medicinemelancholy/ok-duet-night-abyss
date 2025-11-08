@@ -89,6 +89,14 @@ class Auto70jjbTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
                 self.walk_to_aim()
                 win32gui.SendMessage(self.hwnd.hwnd, win32con.WM_KEYUP, 0xA4, 0)
                 _wave_start = time.time()
+                self.current_wave = -1
+                while self.current_wave == -1 and time.time() - _wave_start < 2:
+                    self.get_wave_info()
+                    self.sleep(0.2) 
+                if self.current_wave == -1:
+                    self.log_info('未正确到达任务地点')
+                    self.open_in_mission_menu()
+                    self.sleep(0.5)    
             elif _status == Mission.CONTINUE:
                 self.log_info('任务继续')
                 self.wait_until(self.in_team, time_out=30)
