@@ -63,7 +63,8 @@ class AutoExpulsion(DNAOneTimeTask, CommissionsTask):
                 if _count >= self.config.get("刷几次", 999):
                     self.sleep(1)
                     self.open_in_mission_menu()
-                    self.log_info("任务终止")
+                    self.log_info_notify("任务终止")
+                    self.soundBeep()
                     return
                 self.log_info("任务开始")
                 self.sleep(2.5)
