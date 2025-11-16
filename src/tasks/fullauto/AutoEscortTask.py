@@ -509,81 +509,99 @@ class AutoEscortTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
             return True
 
         # 确保 AutoPuzzleTask 已初始化检测区域
-        if (
-            not puzzle_task.puzzle_boxes
-            or puzzle_task.template_shape != self.frame.shape[:2]
-        ):
-            puzzle_task.init_boxes()
-            logger.debug("已初始化 AutoPuzzleTask 检测区域")
+        #if (
+        #    not puzzle_task.puzzle_boxes
+        #    or puzzle_task.template_shape != self.frame.shape[:2]
+        #):
+        #    puzzle_task.init_boxes()
+        #    logger.debug("已初始化 AutoPuzzleTask 检测区域")
 
         # 等待一小段时间让界面稳定
-        self.sleep(0.5)
+        #self.sleep(0.5)
 
         # 等待直到屏幕上没有 puzzle 为止
-        start_time = time.time()
-        puzzle_detected = False
-        puzzle_solving = False  # 标记是否正在解密
+        #start_time = time.time()
+        #puzzle_detected = False
+        #puzzle_solving = False  # 标记是否正在解密
 
-        while time.time() - start_time < timeout:
+        #while time.time() - start_time < timeout:
             # 更新当前帧（重要！确保检测最新画面）
-            self.next_frame()
+        #    self.next_frame()
 
             # 检查是否有 puzzle
-            has_puzzle = False
+        #    has_puzzle = False
 
-            for i in range(1, 9):
-                puzzle_name = f"mech_maze_{i}"
-                if puzzle_name not in puzzle_task.puzzle_boxes:
-                    continue
+        #    for i in range(1, 9):
+        #        puzzle_name = f"mech_maze_{i}"
+        #        if puzzle_name not in puzzle_task.puzzle_boxes:
+        #            continue
 
-                try:
-                    puzzle_box = self.find_one(
-                        puzzle_name,
-                        box=puzzle_task.puzzle_boxes[puzzle_name],
-                        threshold=puzzle_task.detection_threshold,
-                    )
-                    if puzzle_box:
-                        has_puzzle = True
+        #        try:
+        #            puzzle_box = self.find_one(
+        #                puzzle_name,
+        #                box=puzzle_task.puzzle_boxes[puzzle_name],
+        #                threshold=puzzle_task.detection_threshold,
+        #            )
+        #            if puzzle_box:
+        #                has_puzzle = True
 
                         # 如果检测到 puzzle 且还未开始解密，立即触发解密
-                        if not puzzle_solving:
-                            puzzle_detected = True
-                            puzzle_solving = True
-                            logger.info(f"🔍 检测到 {puzzle_name}，开始解密...")
+        #                if not puzzle_solving:
+        #                    puzzle_detected = True
+        #                    puzzle_solving = True
+        #                    logger.info(f"🔍 检测到 {puzzle_name}，开始解密...")
                             # 主动调用 AutoPuzzleTask 的解密方法
-                            puzzle_task.solve_puzzle(puzzle_name)
-                            logger.info("解密操作已完成，等待 puzzle 消失...")
-                        else:
-                            logger.debug(f"解密后仍检测到 {puzzle_name}，继续等待...")
-                        break
-                except Exception as e:
-                    logger.debug(f"检测 {puzzle_name} 时出错: {e}")
-                    continue
+        #                    puzzle_task.solve_puzzle(puzzle_name)
+        #                    logger.info("解密操作已完成，等待 puzzle 消失...")
+        #                else:
+        #                    logger.debug(f"解密后仍检测到 {puzzle_name}，继续等待...")
+        #                break
+        #        except Exception as e:
+        #            logger.debug(f"检测 {puzzle_name} 时出错: {e}")
+        #            continue
 
             # 如果曾经检测到过 puzzle 并已解密，但现在没有了，说明解密完成
-            if puzzle_solving and not has_puzzle:
+        #    if puzzle_solving and not has_puzzle:
+        #        logger.info("✅ 解密完成，puzzle 已消失")
+        #        self.sleep(0.3)  # 额外等待一下确保稳定
+        #        return True
+
+        puzzle_box = self.box_of_screen_scaled(3840, 2160, 2336, 604, 3307, 1578, name="puzzle_detection", hcenter=True)
+        start_time = time.time()
+        found_any = False
+        box = None
+
+        while time.time() - start_time < 3:
+            box = self.find_best_match_in_box(puzzle_box,
+                                          ["mech_maze_1", "mech_maze_2", "mech_maze_3", "mech_maze_4", "mech_maze_5",
+                                           "mech_maze_6", "mech_maze_7", "mech_maze_8"], 0.7)
+            if box:
+                found_any = True
+                self.send_key("f")
+                puzzle_task.log_puzzle_info(box)
+                # 执行自动解密
+                puzzle_task.solve_puzzle(box.name)
+            elif found_any:
                 logger.info("✅ 解密完成，puzzle 已消失")
                 self.sleep(0.3)  # 额外等待一下确保稳定
                 return True
-
-            # 如果从未检测到 puzzle，可能是：
-            # 1. puzzle 还未出现（需要继续等待）
-            # 2. 这个路径片段没有 puzzle
-            # 持续等待一段时间，如果始终没有检测到就认为没有 puzzle
-            if not puzzle_detected and time.time() - start_time > 3:
-                logger.warning(
+                    
+            self.next_frame()
+                                
+        # 如果从未检测到 puzzle，可能是：
+        # 1. puzzle 还未出现（需要继续等待）
+        # 2. 这个路径片段没有 puzzle
+        # 持续等待一段时间，如果始终没有检测到就认为没有 puzzle
+        if not found_any:
+            logger.warning(
                     "❌ 3秒内未检测到解密拼图，路径可能有误，重新开始任务..."
                 )
-                self.give_up_mission()
-                return False
-
-            self.sleep(0.2)
-
-        # 超时
-        if puzzle_detected:
-            logger.warning(f"❌ 等待解密完成超时（{timeout}秒），重新开始任务...")
             self.give_up_mission()
             return False
+        elif box is not None:
+            logger.warning(f"❌ 等待解密完成超时（{timeout}秒），重新开始任务...")
+            self.give_up_mission()
+            return False           
         else:
             logger.debug("未检测到解密拼图")
             return True
