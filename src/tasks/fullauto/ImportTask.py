@@ -222,9 +222,11 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         max_index = None
 
         for i, name in enumerate(self.img):
+            if index is None and not re.search(r'[a-zA-Z]$', name):
+                continue
             if index is not None and not (index in name and len(name) - len(index) <= 3):
                 continue
-            if index == name:
+            if index is not None and index == name:
                 continue
             count += 1
             img = self.img[name]
