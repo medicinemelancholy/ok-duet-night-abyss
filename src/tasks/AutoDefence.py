@@ -37,7 +37,6 @@ class AutoDefence(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         self.external_movement = _default_movement
         self._external_config = None
         self._merged_config_cache = None
-        self.jiggle_tick = self.create_jiggle_ticker(10)
         self.skill_tick = self.create_skill_ticker()
 
     @property
@@ -101,7 +100,6 @@ class AutoDefence(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
     def init_all(self):
         self.init_for_next_round()
         self.current_round = -1
-        self.jiggle_tick.start_next_tick()
 
     def init_for_next_round(self):
         self.init_runtime_state()
@@ -131,7 +129,6 @@ class AutoDefence(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
                     self.soundBeep()
                     self.runtime_state["wait_next_wave"] = True
             
-            self.jiggle_tick()
             # 如果未超时，则使用技能
             if not self.runtime_state["wait_next_wave"]:
                 self.skill_tick()

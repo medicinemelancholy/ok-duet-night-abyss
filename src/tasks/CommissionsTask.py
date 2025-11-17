@@ -299,15 +299,6 @@ class CommissionsTask(BaseDNATask):
                 self.get_current_char().send_geniemon_key()
         return self.create_ticker(action, interval=lambda: self.config.get("技能释放频率", 5))
 
-    def create_jiggle_ticker(self, interval=1.0):
-        def action():
-            for _ in range(2):
-                self.send_key("s")
-                self.sleep(0.5)
-                self.send_key("w")
-                self.sleep(0.5)
-        return self.create_ticker(action, interval=interval)
-
     def get_round_info(self):
         """获取并更新当前轮次信息。"""
         if self.in_team():
