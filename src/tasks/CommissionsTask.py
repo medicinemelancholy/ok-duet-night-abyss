@@ -107,10 +107,11 @@ class CommissionsTask(BaseDNATask):
 
     def start_mission(self, timeout=0):
         action_timeout = self.action_timeout if timeout == 0 else timeout
+        box = self.box_of_screen_scaled(2560, 1440, 60, 1029, 1582, 1332, name="reward_drag_area", hcenter=True)
         start_time = time.time()
         while time.time() - start_time < action_timeout:
             if btn := self.find_retry_btn() or self.find_bottom_start_btn() or self.find_big_bottom_start_btn():
-                self.move_mouse_to_safe_position()
+                self.move_mouse_to_safe_position(box=box)
                 self.click_box(btn, after_sleep=0)
                 self.move_back_from_safe_position()
             self.sleep(0.2)
@@ -208,15 +209,16 @@ class CommissionsTask(BaseDNATask):
         action_timeout = self.action_timeout if timeout == 0 else timeout
         if self.config.get("自动选择首个密函和密函奖励", False):
             if self.find_letter_interface():
-                self.sleep(0.5)
-                self.move_mouse_to_safe_position()
-                self.click(0.56, 0.5)
+                box = self.box_of_screen_scaled(2560, 1440, 1195, 612, 2449, 817, name="letter_drag_area", hcenter=True)
+                self.sleep(0.1)
+                self.move_mouse_to_safe_position(box=box)
+                self.click(0.56, 0.5, down_time=0.02)
                 self.move_back_from_safe_position()
-                self.sleep(0.5)
+                self.sleep(0.1)
                 self.wait_until(
                     condition=lambda: not self.find_letter_interface(),
                     post_action=lambda: (
-                        self.move_mouse_to_safe_position(),
+                        self.move_mouse_to_safe_position(box=box),
                         self.click(0.79, 0.61),
                         self.move_back_from_safe_position(),
                         self.sleep(1),

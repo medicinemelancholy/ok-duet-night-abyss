@@ -128,14 +128,13 @@ class BaseDNATask(BaseTask):
     def log_info_notify(self, msg):
         self.log_info(msg, notify=self.afk_config['弹出通知'])
 
-    def move_mouse_to_safe_position(self, save_current_pos: bool = True):
+    def move_mouse_to_safe_position(self, save_current_pos: bool = True, box: Union[Box, None] = None):
         if self.afk_config["防止鼠标干扰"]:
-            if save_current_pos:
-                self.old_mouse_pos = win32api.GetCursorPos()
+            self.old_mouse_pos = win32api.GetCursorPos() if save_current_pos else None
+            if self.rel_move_if_in_win(0.95, 0.6, box=box):
+                self.sleep(0.01)
             else:
                 self.old_mouse_pos = None
-            if self.rel_move_if_in_win(0.95, 0.6):
-                self.sleep(0.01)
 
     def move_back_from_safe_position(self):
         if self.afk_config["防止鼠标干扰"] and self.old_mouse_pos is not None:
@@ -226,8 +225,29 @@ class BaseDNATask(BaseTask):
 
         return (win_x <= mouse_x < win_x + hwnd_window.window_width) and \
             (win_y <= mouse_y < win_y + hwnd_window.window_height)
+    
+    def is_mouse_in_box(self, box: Box) -> bool:
+        """
+        检测鼠标是否在给定的 Box 内。
 
-    def rel_move_if_in_win(self, x=0.5, y=0.5):
+        Args:
+            box (Box): 给定的 Box。
+
+        Returns:
+            bool: 如果鼠标在 Box 内则返回 True，否则返回 False。
+        """
+        if not isinstance(box, Box):
+            return True
+        mouse_x, mouse_y = win32api.GetCursorPos()
+        hwnd_window = og.device_manager.hwnd_window
+        coords = [
+            (box.x, box.y),
+            (box.x + box.width, box.y + box.height)
+        ]
+        (x1, y1), (x2, y2) = [hwnd_window.get_abs_cords(x, y) for x, y in coords]
+        return x1 <= mouse_x < x2 and y1 <= mouse_y < y2
+
+    def rel_move_if_in_win(self, x=0.5, y=0.5, box=None):
         """
         如果鼠标在窗口内，则将其移动到游戏窗口内的相对位置。
 
@@ -235,7 +255,7 @@ class BaseDNATask(BaseTask):
             x (float): 相对 x 坐标 (0.0 到 1.0)。
             y (float): 相对 y 坐标 (0.0 到 1.0)。
         """
-        if not self.is_mouse_in_window():
+        if not self.is_mouse_in_window() or not self.is_mouse_in_box(box=box):
             return False
         abs_pos = self.executor.device_manager.hwnd_window.get_abs_cords(self.width_of_screen(x),
                                                                          self.height_of_screen(y))
